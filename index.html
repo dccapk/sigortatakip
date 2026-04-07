@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sigorta Takip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F2F7;
+    --bg2: #FFFFFF;
+    --bg3: #F2F2F7;
+    --surface: #FFFFFF;
+    --surface2: #F2F2F7;
+    --border: rgba(60,60,67,0.12);
+    --text: #000000;
+    --text2: #3C3C43;
+    --text3: rgba(60,60,67,0.6);
+    --text4: rgba(60,60,67,0.3);
+    --accent: #007AFF;
+    --accent2: #5856D6;
+    --green: #34C759;
+    --orange: #FF9500;
+    --red: #FF3B30;
+    --yellow: #FFCC00;
+    --separator: rgba(60,60,67,0.12);
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow2: 0 2px 8px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --nav-height: 83px;
+    --header-height: 96px;
+  }
+  [data-theme="dark"] {
+    --bg: #000000;
+    --bg2: #1C1C1E;
+    --bg3: #2C2C2E;
+    --surface: #1C1C1E;
+    --surface2: #2C2C2E;
+    --border: rgba(255,255,255,0.08);
+    --text: #FFFFFF;
+    --text2: #EBEBF5;
+    --text3: rgba(235,235,245,0.6);
+    --text4: rgba(235,235,245,0.18);
+    --accent: #0A84FF;
+    --accent2: #5E5CE6;
+    --green: #30D158;
+    --orange: #FF9F0A;
+    --red: #FF453A;
+    --yellow: #FFD60A;
+    --separator: rgba(255,255,255,0.08);
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+    --shadow2: 0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif; background:var(--bg); color:var(--text); }
+  body { -webkit-font-smoothing:antialiased; }
+
+  /* === SCREEN SYSTEM === */
+  .screen { display:none; position:fixed; inset:0; background:var(--bg); overflow-y:auto; overflow-x:hidden; padding-bottom:calc(var(--nav-height) + 16px); }
+  .screen.active { display:block; }
+  .screen-enter { animation: slideIn 0.3s cubic-bezier(0.32,0.72,0,1); }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+  @keyframes slideOut { from{transform:translateX(0);opacity:1} to{transform:translateX(-30%);opacity:0} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+
+  /* === PIN SCREEN === */
+  #pin-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; gap:0; }
+  .pin-logo { width:72px; height:72px; background:linear-gradient(145deg, var(--accent), var(--accent2)); border-radius:18px; display:flex; align-items:center; justify-content:center; margin-bottom:28px; box-shadow:0 8px 24px rgba(0,122,255,0.35); }
+  .pin-logo svg { width:38px; height:38px; fill:white; }
+  .pin-title { font-size:26px; font-weight:700; color:var(--text); margin-bottom:6px; letter-spacing:-0.4px; }
+  .pin-sub { font-size:15px; color:var(--text3); margin-bottom:48px; }
+  .pin-dots { display:flex; gap:18px; margin-bottom:48px; }
+  .pin-dot { width:14px; height:14px; border-radius:50%; background:var(--surface2); border:2px solid var(--border); transition:all 0.2s; }
+  .pin-dot.filled { background:var(--accent); border-color:var(--accent); transform:scale(1.1); }
+  .pin-dot.error { background:var(--red); border-color:var(--red); }
+  .pin-keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; width:100%; max-width:280px; }
+  .pin-key { height:72px; border-radius:50%; background:var(--surface); border:none; font-size:26px; font-weight:400; color:var(--text); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:var(--shadow); transition:all 0.1s; user-select:none; }
+  .pin-key:active { transform:scale(0.93); background:var(--surface2); }
+  .pin-key.del { font-size:20px; background:transparent; box-shadow:none; color:var(--accent); font-weight:500; }
+  .pin-key.del:active { background:var(--surface2); }
+  .pin-key-sub { font-size:9px; letter-spacing:1px; color:var(--text3); margin-top:1px; font-weight:500; }
+  .pin-error { color:var(--red); font-size:14px; margin-top:-32px; margin-bottom:24px; font-weight:500; min-height:20px; }
+
+  /* === HEADER === */
+  .ios-header { position:sticky; top:0; z-index:100; background:var(--bg); padding:16px 20px 0; }
+  .ios-header-inner { display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:12px; border-bottom:0.5px solid var(--separator); }
+  .page-title { font-size:28px; font-weight:700; letter-spacing:-0.5px; color:var(--text); }
+  .header-btn { width:34px; height:34px; border-radius:50%; background:var(--surface); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow); }
+  .header-btn svg { width:16px; height:16px; stroke:var(--accent); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-btn.add-btn { background:var(--accent); }
+  .header-btn.add-btn svg { stroke:white; }
+
+  /* === BOTTOM NAV === */
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:var(--nav-height); background:var(--surface); border-top:0.5px solid var(--separator); display:flex; align-items:flex-start; padding-top:10px; z-index:200; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); }
+  .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:0 4px; }
+  .nav-icon { width:26px; height:26px; display:flex; align-items:center; justify-content:center; }
+  .nav-icon svg { width:22px; height:22px; stroke:var(--text4); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.2s; }
+  .nav-label { font-size:10px; color:var(--text4); font-weight:500; transition:color 0.2s; }
+  .nav-item.active .nav-icon svg { stroke:var(--accent); }
+  .nav-item.active .nav-label { color:var(--accent); }
+  .nav-badge { position:absolute; top:-2px; right:-4px; background:var(--red); color:white; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; }
+  .nav-icon-wrap { position:relative; }
+
+  /* === CARDS === */
+  .section-header { padding:20px 20px 8px; font-size:13px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+  .card-list { padding:0 16px 8px; display:flex; flex-direction:column; gap:1px; }
+  .card-group { background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+  .insurance-card { padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; background:var(--surface); transition:background 0.15s; position:relative; }
+  .insurance-card:active { background:var(--surface2); }
+  .insurance-card:not(:last-child)::after { content:''; position:absolute; bottom:0; left:56px; right:0; height:0.5px; background:var(--separator); }
+  .card-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .card-icon.trafik { background:rgba(0,122,255,0.12); }
+  .card-icon.kasko { background:rgba(88,86,214,0.12); }
+  .card-icon.both { background:rgba(52,199,89,0.12); }
+  .card-icon svg { width:20px; height:20px; }
+  .card-info { flex:1; min-width:0; }
+  .card-name { font-size:16px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-plate { font-size:13px; color:var(--text3); font-weight:500; font-family:monospace; letter-spacing:0.5px; }
+  .card-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+  .card-date { font-size:12px; color:var(--text3); font-weight:500; }
+  .card-chevron { color:var(--text4); font-size:18px; }
+  .urgency-badge { font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; }
+  .urgency-badge.red { background:rgba(255,59,48,0.15); color:var(--red); }
+  .urgency-badge.orange { background:rgba(255,149,0,0.15); color:var(--orange); }
+  .urgency-badge.green { background:rgba(52,199,89,0.12); color:var(--green); }
+
+  /* === SEARCH === */
+  .search-bar { margin:12px 16px 4px; position:relative; }
+  .search-input { width:100%; padding:10px 14px 10px 38px; background:var(--surface); border:none; border-radius:10px; font-size:15px; color:var(--text); outline:none; box-shadow:var(--shadow); }
+  .search-input::placeholder { color:var(--text4); }
+  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); }
+  .search-icon svg { width:16px; height:16px; stroke:var(--text4); fill:none; stroke-width:2; }
+
+  /* === STATS === */
+  .stats-row { display:flex; gap:10px; padding:12px 16px 4px; }
+  .stat-card { flex:1; background:var(--surface); border-radius:14px; padding:14px 12px; box-shadow:var(--shadow); }
+  .stat-num { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+  .stat-num.blue { color:var(--accent); }
+  .stat-num.orange { color:var(--orange); }
+  .stat-num.red { color:var(--red); }
+  .stat-label { font-size:11px; color:var(--text3); font-weight:500; margin-top:2px; }
+
+  /* === MODAL / SHEET === */
+  .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:300; display:none; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+  .sheet-overlay.open { display:block; animation:fadeIn 0.25s ease; }
+  .bottom-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; z-index:400; padding:0 0 40px; max-height:92vh; overflow-y:auto; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.32,0.72,0,1); }
+  .bottom-sheet.open { transform:translateY(0); }
+  .sheet-handle { width:36px; height:4px; background:var(--text4); border-radius:2px; margin:12px auto 4px; }
+  .sheet-title { font-size:17px; font-weight:600; color:var(--text); text-align:center; padding:8px 20px 16px; border-bottom:0.5px solid var(--separator); }
+  .form-section { padding:20px 16px 0; }
+  .form-group { background:var(--surface2); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:16px; }
+  .form-row { display:flex; align-items:center; padding:0 16px; min-height:44px; position:relative; }
+  .form-row:not(:last-child)::after { content:''; position:absolute; bottom:0; left:16px; right:0; height:0.5px; background:var(--separator); }
+  .form-label { font-size:15px; color:var(--text); font-weight:500; min-width:120px; flex-shrink:0; }
+  .form-input { flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text); text-align:right; padding:12px 0; font-family:inherit; }
+  .form-input::placeholder { color:var(--text4); }
+  .form-input[type="date"] { -webkit-appearance:none; }
+  .seg-control { display:flex; background:var(--bg3); border-radius:8px; padding:2px; gap:2px; margin:12px 16px; }
+  .seg-btn { flex:1; padding:7px 8px; border:none; border-radius:6px; font-size:13px; font-weight:500; color:var(--text3); background:transparent; cursor:pointer; transition:all 0.2s; }
+  .seg-btn.active { background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .sheet-actions { padding:16px 16px 0; display:flex; gap:10px; }
+  .btn-primary { flex:1; padding:15px; background:var(--accent); color:white; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .btn-primary:active { transform:scale(0.97); opacity:0.85; }
+  .btn-secondary { flex:1; padding:15px; background:var(--surface2); color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:500; cursor:pointer; font-family:inherit; }
+  .btn-danger { padding:15px; background:rgba(255,59,48,0.1); color:var(--red); border:none; border-radius:12px; font-size:16px; font-weight:500; cursor:pointer; font-family:inherit; width:100%; }
+
+  /* === DETAIL === */
+  .detail-header { padding:24px 20px 16px; border-bottom:0.5px solid var(--separator); }
+  .detail-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .detail-name { font-size:22px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+  .detail-plate { font-size:16px; color:var(--text3); font-family:monospace; font-weight:600; letter-spacing:1px; margin-top:2px; }
+  .detail-section { margin:0 16px 12px; background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+  .detail-row { display:flex; align-items:center; padding:13px 16px; position:relative; }
+  .detail-row:not(:last-child)::after { content:''; position:absolute; bottom:0; left:16px; right:0; height:0.5px; background:var(--separator); }
+  .detail-row-label { font-size:15px; color:var(--text3); flex:1; }
+  .detail-row-val { font-size:15px; color:var(--text); font-weight:500; text-align:right; }
+  .detail-section-title { padding:20px 20px 8px; font-size:13px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+  .back-btn { display:flex; align-items:center; gap:4px; font-size:16px; color:var(--accent); font-weight:500; cursor:pointer; padding:4px 0; }
+  .back-btn svg { width:10px; height:16px; stroke:var(--accent); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* === YAKLASAN SCREEN === */
+  .alert-header { padding:12px 16px 8px; }
+  .alert-info { background:rgba(255,149,0,0.08); border-radius:12px; padding:12px 14px; display:flex; align-items:flex-start; gap:10px; }
+  .alert-info svg { width:18px; height:18px; fill:var(--orange); flex-shrink:0; margin-top:1px; }
+  .alert-info p { font-size:13px; color:var(--text2); line-height:1.5; }
+  .yaklasan-card { margin:0 16px 8px; background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); cursor:pointer; transition:all 0.15s; }
+  .yaklasan-card:active { transform:scale(0.98); }
+  .ycard-top { padding:14px 16px 10px; display:flex; align-items:center; gap:12px; }
+  .ycard-bottom { padding:10px 16px 14px; border-top:0.5px solid var(--separator); display:flex; gap:12px; }
+  .ycard-chip { flex:1; border-radius:8px; padding:8px 10px; }
+  .ycard-chip.red-chip { background:rgba(255,59,48,0.1); }
+  .ycard-chip.orange-chip { background:rgba(255,149,0,0.1); }
+  .ycard-chip.green-chip { background:rgba(52,199,89,0.08); }
+  .chip-type { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+  .chip-type.red { color:var(--red); }
+  .chip-type.orange { color:var(--orange); }
+  .chip-type.green { color:var(--green); }
+  .chip-date { font-size:13px; color:var(--text); font-weight:500; }
+  .chip-days { font-size:12px; font-weight:600; }
+  .chip-days.red { color:var(--red); }
+  .chip-days.orange { color:var(--orange); }
+  .chip-days.green { color:var(--green); }
+
+  /* === SETTINGS === */
+  .settings-section { margin:0 16px 24px; }
+  .settings-list { background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+  .settings-row { display:flex; align-items:center; padding:14px 16px; gap:14px; cursor:pointer; position:relative; transition:background 0.15s; }
+  .settings-row:active { background:var(--surface2); }
+  .settings-row:not(:last-child)::after { content:''; position:absolute; bottom:0; left:56px; right:0; height:0.5px; background:var(--separator); }
+  .settings-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .settings-row-label { flex:1; font-size:16px; color:var(--text); font-weight:500; }
+  .settings-row-val { font-size:15px; color:var(--text3); }
+  .settings-row-chevron { color:var(--text4); font-size:14px; }
+  .theme-picker { display:flex; gap:10px; padding:4px 0; }
+  .theme-opt { flex:1; padding:10px; border:2px solid var(--border); border-radius:10px; text-align:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text3); transition:all 0.2s; }
+  .theme-opt.selected { border-color:var(--accent); color:var(--accent); background:rgba(0,122,255,0.06); }
+
+  /* === EMPTY === */
+  .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 32px; gap:12px; }
+  .empty-icon { width:64px; height:64px; border-radius:16px; background:var(--surface2); display:flex; align-items:center; justify-content:center; }
+  .empty-icon svg { width:32px; height:32px; stroke:var(--text4); fill:none; stroke-width:1.5; }
+  .empty-title { font-size:17px; font-weight:600; color:var(--text); }
+  .empty-sub { font-size:14px; color:var(--text3); text-align:center; line-height:1.5; }
+
+  /* SYNC INDICATOR */
+  .sync-bar { display:flex; align-items:center; gap:6px; padding:6px 16px; font-size:12px; color:var(--text3); }
+  .sync-dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .sync-dot.syncing { background:var(--orange); animation:pulse 1s infinite; }
+  .sync-dot.error { background:var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:calc(var(--nav-height) + 12px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--text); color:var(--bg); padding:10px 18px; border-radius:20px; font-size:14px; font-weight:500; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* LOADING */
+  .loading-spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-overlay { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:500; flex-direction:column; gap:16px; }
+  .loading-overlay .loading-spinner { width:32px; height:32px; border-width:3px; }
+
+  /* ONBOARD - Sheets link setup */
+  .onboard { padding:32px 24px; display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center; padding-top:80px; }
+  .onboard-icon { width:80px; height:80px; background:linear-gradient(145deg, #34A853, #0F9D58); border-radius:20px; display:flex; align-items:center; justify-content:center; }
+  .onboard h2 { font-size:22px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+  .onboard p { font-size:15px; color:var(--text3); line-height:1.6; }
+  .onboard-input { width:100%; padding:14px 16px; background:var(--surface); border:1.5px solid var(--border); border-radius:12px; font-size:15px; color:var(--text); outline:none; font-family:inherit; margin-top:8px; }
+  .onboard-input:focus { border-color:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <p style="font-size:15px;color:var(--text3);font-weight:500;">Yükleniyor...</p>
+</div>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen" style="display:none; flex-direction:column; align-items:center; justify-content:center; position:fixed; inset:0; background:var(--bg); z-index:600; padding:0 32px;">
+  <div class="pin-logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" style="fill:none;stroke:white;stroke-width:1.5;stroke-linecap:round"/><path d="M9 4 C7 7 6 10 6 12 C6 16.4 8.6 20 12 21 C15.4 20 18 16.4 18 12 C18 10 17 7 15 4" style="fill:none;stroke:white;stroke-width:1.5;stroke-linecap:round"/><circle cx="12" cy="12" r="3" fill="white"/></svg>
+  </div>
+  <div class="pin-title">Sigorta Takip</div>
+  <div class="pin-sub">PIN kodunuzu girin</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinPress('1')"><span>1</span></button>
+    <button class="pin-key" onclick="pinPress('2')"><span>2</span><span class="pin-key-sub">ABC</span></button>
+    <button class="pin-key" onclick="pinPress('3')"><span>3</span><span class="pin-key-sub">DEF</span></button>
+    <button class="pin-key" onclick="pinPress('4')"><span>4</span><span class="pin-key-sub">GHI</span></button>
+    <button class="pin-key" onclick="pinPress('5')"><span>5</span><span class="pin-key-sub">JKL</span></button>
+    <button class="pin-key" onclick="pinPress('6')"><span>6</span><span class="pin-key-sub">MNO</span></button>
+    <button class="pin-key" onclick="pinPress('7')"><span>7</span><span class="pin-key-sub">PQRS</span></button>
+    <button class="pin-key" onclick="pinPress('8')"><span>8</span><span class="pin-key-sub">TUV</span></button>
+    <button class="pin-key" onclick="pinPress('9')"><span>9</span><span class="pin-key-sub">WXYZ</span></button>
+    <button class="pin-key" style="background:transparent;box-shadow:none;"></button>
+    <button class="pin-key" onclick="pinPress('0')"><span>0</span></button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none; height:100%;">
+
+  <!-- SCREENS -->
+  <div id="screen-home" class="screen active">
+    <div class="ios-header">
+      <div class="ios-header-inner">
+        <div class="page-title">Sigortalar</div>
+        <button class="header-btn add-btn" onclick="openAddSheet()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <div class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+      <input class="search-input" placeholder="İsim veya plaka ara..." oninput="filterList(this.value)" id="search-input">
+    </div>
+    <div class="stats-row" id="stats-row"></div>
+    <div id="sync-bar" class="sync-bar" style="display:none;">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-text">Bağlı</span>
+    </div>
+    <div id="home-list"></div>
+  </div>
+
+  <div id="screen-detail" class="screen">
+    <div class="ios-header">
+      <div class="ios-header-inner">
+        <div class="back-btn" onclick="goBack()">
+          <svg viewBox="0 0 10 16"><polyline points="8,2 2,8 8,14"/></svg>
+          Geri
+        </div>
+        <button class="header-btn" onclick="openEditSheet()" style="margin-right:4px;">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+
+  <div id="screen-yaklasan" class="screen">
+    <div class="ios-header">
+      <div class="ios-header-inner">
+        <div class="page-title">Yaklaşanlar</div>
+      </div>
+    </div>
+    <div class="alert-header">
+      <div class="alert-info">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p><strong style="color:var(--orange)">Turuncu</strong> = 15 gün veya daha az &nbsp;|&nbsp; <strong style="color:var(--red)">Kırmızı</strong> = 7 günden az kaldı</p>
+      </div>
+    </div>
+    <div id="yaklasan-list"></div>
+  </div>
+
+  <div id="screen-settings" class="screen">
+    <div class="ios-header">
+      <div class="ios-header-inner">
+        <div class="page-title">Ayarlar</div>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+
+    <div class="section-header">GÖRÜNÜM</div>
+    <div class="settings-section" style="margin-top:0;">
+      <div class="settings-list">
+        <div class="settings-row" style="cursor:default;">
+          <div class="settings-icon" style="background:rgba(0,122,255,0.12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div class="settings-row-label">Tema</div>
+            <div class="theme-picker" style="margin-top:8px;">
+              <div class="theme-opt" id="theme-light" onclick="setTheme('light')">☀️ Açık</div>
+              <div class="theme-opt" id="theme-dark" onclick="setTheme('dark')">🌙 Koyu</div>
+              <div class="theme-opt" id="theme-auto" onclick="setTheme('auto')">⚙️ Otomatik</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">GÜVENLİK</div>
+    <div class="settings-section" style="margin-top:0;">
+      <div class="settings-list">
+        <div class="settings-row" onclick="showChangePinSheet()">
+          <div class="settings-icon" style="background:rgba(255,149,0,0.12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="settings-row-label">PIN Değiştir</div>
+          <div class="settings-row-chevron">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">VERİ BAĞLANTISI</div>
+    <div class="settings-section" style="margin-top:0;">
+      <div class="settings-list">
+        <div class="settings-row" onclick="showSheetsConfig()">
+          <div class="settings-icon" style="background:rgba(52,199,89,0.12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <div class="settings-row-label">Google Sheets URL</div>
+          <div class="settings-row-val" id="sheets-status-label" style="font-size:12px;">—</div>
+          <div class="settings-row-chevron">›</div>
+        </div>
+        <div class="settings-row" onclick="syncNow()">
+          <div class="settings-icon" style="background:rgba(0,122,255,0.12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          </div>
+          <div class="settings-row-label">Verileri Yenile</div>
+          <div class="settings-row-chevron">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">UYGULAMA</div>
+    <div class="settings-section" style="margin-top:0;">
+      <div class="settings-list">
+        <div class="settings-row" style="cursor:default;">
+          <div class="settings-icon" style="background:var(--surface2);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="settings-row-label">Versiyon</div>
+          <div class="settings-row-val">1.0.0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="navTo('home')" id="nav-home">
+      <div class="nav-icon-wrap">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+      </div>
+      <span class="nav-label">Sigortalar</span>
+    </div>
+    <div class="nav-item" onclick="navTo('yaklasan')" id="nav-yaklasan">
+      <div class="nav-icon-wrap">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="nav-badge" id="nav-badge" style="display:none;">0</div>
+      </div>
+      <span class="nav-label">Yaklaşanlar</span>
+    </div>
+    <div class="nav-item" onclick="navTo('settings')" id="nav-settings">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <span class="nav-label">Ayarlar</span>
+    </div>
+  </div>
+</div>
+
+<!-- SHEETS CONFIG SHEET -->
+<div class="sheet-overlay" id="sheets-overlay" onclick="closeSheetsConfig()"></div>
+<div class="bottom-sheet" id="sheets-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Google Sheets Bağlantısı</div>
+  <div class="form-section">
+    <p style="font-size:14px;color:var(--text3);margin-bottom:16px;line-height:1.6;">Apps Script Web App URL'sini buraya yapıştırın. URL genellikle <code style="font-size:12px;background:var(--surface2);padding:2px 5px;border-radius:4px;">https://script.google.com/macros/s/...</code> şeklinde başlar.</p>
+    <div class="form-group">
+      <div class="form-row">
+        <textarea id="sheets-url-input" class="form-input" placeholder="https://script.google.com/macros/s/..." rows="3" style="text-align:left;resize:none;line-height:1.5;padding:12px 0;font-family:monospace;font-size:13px;"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn-secondary" onclick="closeSheetsConfig()">İptal</button>
+    <button class="btn-primary" onclick="saveSheetsUrl()">Kaydet & Bağlan</button>
+  </div>
+</div>
+
+<!-- ADD/EDIT SHEET -->
+<div class="sheet-overlay" id="add-overlay" onclick="closeAddSheet()"></div>
+<div class="bottom-sheet" id="add-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="add-sheet-title">Yeni Sigorta</div>
+  <div class="form-section">
+    <div class="form-group">
+      <div class="form-row">
+        <label class="form-label">Ad</label>
+        <input class="form-input" id="f-isim" placeholder="Ahmet" type="text">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Soyad</label>
+        <input class="form-input" id="f-soyisim" placeholder="Yılmaz" type="text">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Plaka</label>
+        <input class="form-input" id="f-plaka" placeholder="34 ABC 123" type="text" style="text-transform:uppercase;">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Acente</label>
+        <input class="form-input" id="f-acente" placeholder="Sigorta Acentesi" type="text">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-row" style="padding:10px 16px;">
+        <label class="form-label" style="font-size:14px;color:var(--text3);">Sigorta Tipi</label>
+      </div>
+    </div>
+    <div class="seg-control">
+      <button class="seg-btn active" id="seg-trafik" onclick="setSeg('trafik')">🚗 Trafik</button>
+      <button class="seg-btn" id="seg-kasko" onclick="setSeg('kasko')">🛡️ Kasko</button>
+      <button class="seg-btn" id="seg-ikisi" onclick="setSeg('ikisi')">✨ İkisi</button>
+    </div>
+
+    <div class="form-group" id="trafik-fields">
+      <div class="form-row">
+        <label class="form-label">Trafik Tarihi</label>
+        <input class="form-input" id="f-trafik-tarih" type="date">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Trafik Tutarı</label>
+        <input class="form-input" id="f-trafik-tutar" placeholder="₺0" type="number">
+      </div>
+    </div>
+
+    <div class="form-group" id="kasko-fields" style="display:none;">
+      <div class="form-row">
+        <label class="form-label">Kasko Tarihi</label>
+        <input class="form-input" id="f-kasko-tarih" type="date">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Kasko Tutarı</label>
+        <input class="form-input" id="f-kasko-tutar" placeholder="₺0" type="number">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-row">
+        <label class="form-label">Notlar</label>
+        <input class="form-input" id="f-notlar" placeholder="İsteğe bağlı" type="text">
+      </div>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn-secondary" onclick="closeAddSheet()">İptal</button>
+    <button class="btn-primary" id="add-save-btn" onclick="saveRecord()">Kaydet</button>
+  </div>
+  <div style="padding:10px 16px 0;" id="delete-btn-wrap" style="display:none;">
+    <button class="btn-danger" onclick="deleteRecord()">Sil</button>
+  </div>
+</div>
+
+<!-- CHANGE PIN SHEET -->
+<div class="sheet-overlay" id="changepin-overlay" onclick="closeChangePinSheet()"></div>
+<div class="bottom-sheet" id="changepin-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">PIN Değiştir</div>
+  <div class="form-section">
+    <div class="form-group">
+      <div class="form-row">
+        <label class="form-label">Mevcut PIN</label>
+        <input class="form-input" id="cp-current" type="password" maxlength="4" placeholder="••••" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Yeni PIN</label>
+        <input class="form-input" id="cp-new" type="password" maxlength="4" placeholder="••••" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Tekrar</label>
+        <input class="form-input" id="cp-confirm" type="password" maxlength="4" placeholder="••••" inputmode="numeric">
+      </div>
+    </div>
+    <p id="cp-error" style="font-size:13px;color:var(--red);padding:0 4px;min-height:18px;margin-top:-8px;"></p>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn-secondary" onclick="closeChangePinSheet()">İptal</button>
+    <button class="btn-primary" onclick="doChangePin()">Değiştir</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =========================================================
+// STATE
+// =========================================================
+let records = [];
+let currentPin = '';
+let editingId = null;
+let currentSeg = 'trafik';
+let sheetsUrl = '';
+let isSyncing = false;
+
+// =========================================================
+// INIT
+// =========================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Load stored settings
+  currentPin = localStorage.getItem('app_pin') || '1234';
+  sheetsUrl = localStorage.getItem('sheets_url') || '';
+  const savedTheme = localStorage.getItem('theme') || 'auto';
+  applyTheme(savedTheme);
+  updateThemeUI(savedTheme);
+
+  // Hide loading
+  setTimeout(() => {
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('pin-screen').style.display = 'flex';
+  }, 600);
+});
+
+// =========================================================
+// THEME
+// =========================================================
+function applyTheme(mode) {
+  if (mode === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (mode === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    // auto
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+}
+function setTheme(mode) {
+  localStorage.setItem('theme', mode);
+  applyTheme(mode);
+  updateThemeUI(mode);
+}
+function updateThemeUI(mode) {
+  ['light','dark','auto'].forEach(t => {
+    document.getElementById('theme-'+t)?.classList.toggle('selected', t === mode);
+  });
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  const t = localStorage.getItem('theme') || 'auto';
+  if (t === 'auto') applyTheme('auto');
+});
+
+// =========================================================
+// PIN
+// =========================================================
+let pinInput = '';
+function pinPress(d) {
+  if (pinInput.length >= 4) return;
+  pinInput += d;
+  updatePinDots();
+  if (pinInput.length === 4) {
+    setTimeout(() => checkPin(), 120);
+  }
+}
+function pinDel() {
+  if (pinInput.length === 0) return;
+  pinInput = pinInput.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  resetPinDotColors();
+}
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d'+i);
+    d.classList.toggle('filled', i < pinInput.length);
+    d.classList.remove('error');
+  }
+}
+function resetPinDotColors() {
+  for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.remove('error');
+}
+function checkPin() {
+  if (pinInput === currentPin) {
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    pinInput = '';
+    updatePinDots();
+    loadData();
+  } else {
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('d'+i);
+      d.classList.remove('filled');
+      d.classList.add('error');
+    }
+    document.getElementById('pin-screen').style.display = 'flex';
+    document.getElementById('pin-screen').style.animation = 'none';
+    document.getElementById('pin-dots').style.animation = 'shake 0.4s ease';
+    setTimeout(() => {
+      document.getElementById('pin-dots').style.animation = '';
+      resetPinDotColors();
+    }, 400);
+    document.getElementById('pin-error').textContent = 'Hatalı PIN, tekrar deneyin';
+    pinInput = '';
+  }
+}
+
+// =========================================================
+// NAVIGATION
+// =========================================================
+let currentScreen = 'home';
+function navTo(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('nav-'+name)?.classList.add('active');
+  currentScreen = name;
+  if (name === 'yaklasan') renderYaklasan();
+  if (name === 'home') renderHome();
+  if (name === 'settings') {
+    document.getElementById('sheets-status-label').textContent = sheetsUrl ? '✓ Bağlı' : 'Ayarlanmadı';
+  }
+}
+function goBack() {
+  navTo('home');
+}
+function showDetail(id) {
+  const rec = records.find(r => r.id == id);
+  if (!rec) return;
+  editingId = id;
+  renderDetail(rec);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-detail').classList.add('active', 'screen-enter');
+  setTimeout(() => document.getElementById('screen-detail').classList.remove('screen-enter'), 350);
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+// =========================================================
+// DATA
+// =========================================================
+async function loadData() {
+  if (!sheetsUrl) {
+    // Load from localStorage as fallback
+    const local = localStorage.getItem('local_records');
+    records = local ? JSON.parse(local) : [];
+    renderHome();
+    renderBadge();
+    return;
+  }
+  setSyncState('syncing');
+  try {
+    const res = await fetch(sheetsUrl + '?action=read', { method: 'GET' });
+    const data = await res.json();
+    if (data.success) {
+      records = data.data || [];
+      localStorage.setItem('local_records', JSON.stringify(records));
+      setSyncState('ok');
+    } else {
+      throw new Error('API error');
+    }
+  } catch(e) {
+    // Fallback to local
+    const local = localStorage.getItem('local_records');
+    records = local ? JSON.parse(local) : [];
+    setSyncState('error');
+  }
+  renderHome();
+  renderBadge();
+}
+function setSyncState(state) {
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  const bar = document.getElementById('sync-bar');
+  if (!sheetsUrl) { bar.style.display='none'; return; }
+  bar.style.display = 'flex';
+  dot.className = 'sync-dot';
+  if (state === 'syncing') { dot.classList.add('syncing'); text.textContent = 'Senkronize ediliyor...'; }
+  else if (state === 'ok') { text.textContent = 'Google Sheets\'e bağlı'; }
+  else { dot.classList.add('error'); text.textContent = 'Bağlantı hatası (yerel veri)'; }
+}
+async function syncNow() {
+  showToast('Veriler yenileniyor...');
+  await loadData();
+  showToast('Güncellendi ✓');
+}
+
+async function saveRecord() {
+  const isim = document.getElementById('f-isim').value.trim();
+  const soyisim = document.getElementById('f-soyisim').value.trim();
+  const plaka = document.getElementById('f-plaka').value.trim().toUpperCase();
+  const acente = document.getElementById('f-acente').value.trim();
+
+  if (!isim || !plaka) { showToast('Ad ve plaka zorunludur'); return; }
+
+  const payload = {
+    isim, soyisim, plaka, acente,
+    tip: currentSeg,
+    trafik_tarihi: currentSeg !== 'kasko' ? document.getElementById('f-trafik-tarih').value : '',
+    kasko_tarihi: currentSeg !== 'trafik' ? document.getElementById('f-kasko-tarih').value : '',
+    trafik_tutar: currentSeg !== 'kasko' ? document.getElementById('f-trafik-tutar').value : '',
+    kasko_tutar: currentSeg !== 'trafik' ? document.getElementById('f-kasko-tutar').value : '',
+    notlar: document.getElementById('f-notlar').value.trim()
+  };
+
+  const btn = document.getElementById('add-save-btn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  if (editingId) {
+    payload.action = 'update';
+    payload.id = editingId;
+    await apiCall(payload);
+    const idx = records.findIndex(r => r.id == editingId);
+    if (idx >= 0) records[idx] = { ...records[idx], ...payload };
+    showToast('Güncellendi ✓');
+  } else {
+    payload.action = 'add';
+    const result = await apiCall(payload);
+    const newId = result?.id || Date.now().toString();
+    records.push({ ...payload, id: newId });
+    showToast('Kaydedildi ✓');
+  }
+
+  localStorage.setItem('local_records', JSON.stringify(records));
+  btn.textContent = 'Kaydet';
+  btn.disabled = false;
+  closeAddSheet();
+  renderHome();
+  renderBadge();
+  if (editingId) {
+    const rec = records.find(r => r.id == editingId);
+    if (rec) renderDetail(rec);
+  }
+  editingId = null;
+}
+
+async function deleteRecord() {
+  if (!editingId) return;
+  if (!confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
+  await apiCall({ action: 'delete', id: editingId });
+  records = records.filter(r => r.id != editingId);
+  localStorage.setItem('local_records', JSON.stringify(records));
+  editingId = null;
+  closeAddSheet();
+  navTo('home');
+  showToast('Silindi');
+}
+
+async function apiCall(payload) {
+  if (!sheetsUrl) return null;
+  try {
+    const res = await fetch(sheetsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+// =========================================================
+// RENDER HOME
+// =========================================================
+let searchVal = '';
+function filterList(val) {
+  searchVal = val.toLowerCase();
+  renderHome();
+}
+function renderHome() {
+  const filtered = records.filter(r => {
+    if (!searchVal) return true;
+    return (r.isim+' '+r.soyisim).toLowerCase().includes(searchVal) || (r.plaka||'').toLowerCase().includes(searchVal);
+  });
+
+  // Stats
+  const total = records.length;
+  const urgent7 = records.filter(r => getMinDaysLeft(r) !== null && getMinDaysLeft(r) < 7).length;
+  const urgent15 = records.filter(r => getMinDaysLeft(r) !== null && getMinDaysLeft(r) < 15 && getMinDaysLeft(r) >= 7).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-num blue">${total}</div><div class="stat-label">Toplam Kayıt</div></div>
+    <div class="stat-card"><div class="stat-num orange">${urgent15}</div><div class="stat-label">15 Günde Bitiyor</div></div>
+    <div class="stat-card"><div class="stat-num red">${urgent7}</div><div class="stat-label">Kritik (&lt;7 gün)</div></div>
+  `;
+
+  if (filtered.length === 0) {
+    document.getElementById('home-list').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="empty-title">${searchVal ? 'Sonuç bulunamadı' : 'Henüz kayıt yok'}</div>
+        <div class="empty-sub">${searchVal ? 'Arama kriterlerinizi değiştirin' : 'Yeni sigorta eklemek için + butonuna tıklayın'}</div>
+      </div>`;
+    return;
+  }
+
+  // Sort: urgent first
+  const sorted = [...filtered].sort((a, b) => {
+    const da = getMinDaysLeft(a) ?? 9999;
+    const db = getMinDaysLeft(b) ?? 9999;
+    return da - db;
+  });
+
+  const html = sorted.map(r => renderCard(r)).join('');
+  document.getElementById('home-list').innerHTML = `<div class="card-list"><div class="card-group">${html}</div></div>`;
+}
+
+function renderCard(r) {
+  const days = getMinDaysLeft(r);
+  let badge = '';
+  if (days !== null) {
+    if (days < 7) badge = `<span class="urgency-badge red">${days}g</span>`;
+    else if (days <= 15) badge = `<span class="urgency-badge orange">${days}g</span>`;
+    else badge = `<span class="urgency-badge green">${days}g</span>`;
+  }
+  const iconClass = r.tip === 'trafik' ? 'trafik' : r.tip === 'kasko' ? 'kasko' : 'both';
+  const iconSvg = r.tip === 'trafik'
+    ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="m16 8 5 5v3h-5V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+    : r.tip === 'kasko'
+    ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+    : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>`;
+
+  const tipLabel = r.tip === 'trafik' ? 'Trafik' : r.tip === 'kasko' ? 'Kasko' : 'Trafik + Kasko';
+  const nextDate = getNextDate(r);
+
+  return `<div class="insurance-card" onclick="showDetail('${r.id}')">
+    <div class="card-icon ${iconClass}">${iconSvg}</div>
+    <div class="card-info">
+      <div class="card-name">${r.isim} ${r.soyisim||''}</div>
+      <div class="card-plate">${r.plaka} · ${tipLabel}</div>
+    </div>
+    <div class="card-right">
+      ${badge}
+      <div class="card-date">${nextDate ? formatDate(nextDate) : '—'}</div>
+      <div class="card-chevron">›</div>
+    </div>
+  </div>`;
+}
+
+// =========================================================
+// YAKLASAN
+// =========================================================
+function renderYaklasan() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const list = [];
+
+  records.forEach(r => {
+    if (r.tip !== 'kasko' && r.trafik_tarihi) {
+      const d = new Date(r.trafik_tarihi); d.setHours(0,0,0,0);
+      const days = Math.ceil((d - today) / 86400000);
+      if (days <= 30) list.push({ ...r, _type: 'Trafik', _date: r.trafik_tarihi, _days: days });
+    }
+    if (r.tip !== 'trafik' && r.kasko_tarihi) {
+      const d = new Date(r.kasko_tarihi); d.setHours(0,0,0,0);
+      const days = Math.ceil((d - today) / 86400000);
+      if (days <= 30) list.push({ ...r, _type: 'Kasko', _date: r.kasko_tarihi, _days: days });
+    }
+  });
+
+  list.sort((a, b) => a._days - b._days);
+
+  if (list.length === 0) {
+    document.getElementById('yaklasan-list').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div class="empty-title">Yaklaşan sigorta yok</div>
+        <div class="empty-sub">Önümüzdeki 30 gün içinde biten sigorta bulunmuyor</div>
+      </div>`;
+    return;
+  }
+
+  const html = list.map(r => {
+    const isRed = r._days < 7;
+    const isOrange = r._days >= 7 && r._days <= 15;
+    const colorClass = isRed ? 'red' : isOrange ? 'orange' : 'green';
+    const chipClass = isRed ? 'red-chip' : isOrange ? 'orange-chip' : 'green-chip';
+    const daysText = r._days < 0 ? `${Math.abs(r._days)} gün geçti!` : r._days === 0 ? 'Bugün!' : `${r._days} gün kaldı`;
+
+    return `<div class="yaklasan-card" onclick="showDetail('${r.id}')">
+      <div class="ycard-top">
+        <div class="card-icon ${r._type === 'Trafik' ? 'trafik' : 'kasko'}" style="width:36px;height:36px;border-radius:9px;">
+          ${r._type === 'Trafik'
+            ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="m16 8 5 5v3h-5V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+            : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+          }
+        </div>
+        <div class="card-info">
+          <div class="card-name">${r.isim} ${r.soyisim||''}</div>
+          <div class="card-plate">${r.plaka} · ${r.acente||'—'}</div>
+        </div>
+        <span class="urgency-badge ${colorClass}">${daysText}</span>
+      </div>
+      <div class="ycard-bottom">
+        <div class="ycard-chip ${chipClass}" style="flex:1;">
+          <div class="chip-type ${colorClass}">${r._type}</div>
+          <div class="chip-date">${formatDate(r._date)}</div>
+          <div class="chip-days ${colorClass}">${daysText}</div>
+        </div>
+        ${r._type === 'Trafik' && r.trafik_tutar ? `<div class="ycard-chip" style="background:var(--surface2);flex:0.6;"><div class="chip-type" style="color:var(--text3);">Tutar</div><div class="chip-date">₺${Number(r.trafik_tutar).toLocaleString('tr')}</div></div>` : ''}
+        ${r._type === 'Kasko' && r.kasko_tutar ? `<div class="ycard-chip" style="background:var(--surface2);flex:0.6;"><div class="chip-type" style="color:var(--text3);">Tutar</div><div class="chip-date">₺${Number(r.kasko_tutar).toLocaleString('tr')}</div></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('yaklasan-list').innerHTML = html;
+}
+
+function renderBadge() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let count = 0;
+  records.forEach(r => {
+    if (r.trafik_tarihi) { const d=new Date(r.trafik_tarihi); const days=Math.ceil((d-today)/86400000); if(days<=15) count++; }
+    if (r.kasko_tarihi) { const d=new Date(r.kasko_tarihi); const days=Math.ceil((d-today)/86400000); if(days<=15) count++; }
+  });
+  const badge = document.getElementById('nav-badge');
+  if (count > 0) { badge.style.display='flex'; badge.textContent = count; }
+  else { badge.style.display='none'; }
+}
+
+// =========================================================
+// DETAIL
+// =========================================================
+function renderDetail(r) {
+  const days_t = r.trafik_tarihi ? daysLeft(r.trafik_tarihi) : null;
+  const days_k = r.kasko_tarihi ? daysLeft(r.kasko_tarihi) : null;
+
+  function daysBadge(days) {
+    if (days === null) return '';
+    const cls = days < 7 ? 'red' : days <= 15 ? 'orange' : 'green';
+    const txt = days < 0 ? `${Math.abs(days)}g geçti` : days === 0 ? 'Bugün' : `${days}g kaldı`;
+    return `<span class="urgency-badge ${cls}" style="font-size:12px;">${txt}</span>`;
+  }
+
+  const tipLabel = r.tip === 'trafik' ? 'Trafik' : r.tip === 'kasko' ? 'Kasko' : 'Trafik + Kasko';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-icon ${r.tip === 'trafik' ? 'card-icon trafik' : r.tip === 'kasko' ? 'card-icon kasko' : 'card-icon both'}">
+        ${r.tip === 'trafik'
+          ? `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="m16 8 5 5v3h-5V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+          : r.tip === 'kasko'
+          ? `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+          : `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>`
+        }
+      </div>
+      <div class="detail-name">${r.isim} ${r.soyisim||''}</div>
+      <div class="detail-plate">${r.plaka}</div>
+    </div>
+
+    <div class="detail-section-title">BİLGİLER</div>
+    <div class="detail-section">
+      <div class="detail-row"><div class="detail-row-label">Sigorta Tipi</div><div class="detail-row-val">${tipLabel}</div></div>
+      <div class="detail-row"><div class="detail-row-label">Acente</div><div class="detail-row-val">${r.acente||'—'}</div></div>
+      ${r.notlar ? `<div class="detail-row"><div class="detail-row-label">Notlar</div><div class="detail-row-val" style="max-width:60%;text-align:right;">${r.notlar}</div></div>` : ''}
+    </div>
+
+    ${r.trafik_tarihi ? `
+    <div class="detail-section-title">TRAFİK SİGORTASI</div>
+    <div class="detail-section">
+      <div class="detail-row"><div class="detail-row-label">Bitiş Tarihi</div><div class="detail-row-val" style="display:flex;align-items:center;gap:8px;">${daysBadge(days_t)} ${formatDate(r.trafik_tarihi)}</div></div>
+      ${r.trafik_tutar ? `<div class="detail-row"><div class="detail-row-label">Tutar</div><div class="detail-row-val">₺${Number(r.trafik_tutar).toLocaleString('tr')}</div></div>` : ''}
+    </div>` : ''}
+
+    ${r.kasko_tarihi ? `
+    <div class="detail-section-title">KASKO</div>
+    <div class="detail-section">
+      <div class="detail-row"><div class="detail-row-label">Bitiş Tarihi</div><div class="detail-row-val" style="display:flex;align-items:center;gap:8px;">${daysBadge(days_k)} ${formatDate(r.kasko_tarihi)}</div></div>
+      ${r.kasko_tutar ? `<div class="detail-row"><div class="detail-row-label">Tutar</div><div class="detail-row-val">₺${Number(r.kasko_tutar).toLocaleString('tr')}</div></div>` : ''}
+    </div>` : ''}
+  `;
+}
+
+// =========================================================
+// ADD / EDIT SHEET
+// =========================================================
+function setSeg(seg) {
+  currentSeg = seg;
+  ['trafik','kasko','ikisi'].forEach(s => document.getElementById('seg-'+s).classList.toggle('active', s === seg));
+  document.getElementById('trafik-fields').style.display = (seg === 'trafik' || seg === 'ikisi') ? 'block' : 'none';
+  document.getElementById('kasko-fields').style.display = (seg === 'kasko' || seg === 'ikisi') ? 'block' : 'none';
+}
+function openAddSheet() {
+  editingId = null;
+  document.getElementById('add-sheet-title').textContent = 'Yeni Sigorta';
+  document.getElementById('add-save-btn').textContent = 'Kaydet';
+  document.getElementById('delete-btn-wrap').style.display = 'none';
+  ['f-isim','f-soyisim','f-plaka','f-acente','f-trafik-tarih','f-kasko-tarih','f-trafik-tutar','f-kasko-tutar','f-notlar'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  setSeg('trafik');
+  document.getElementById('add-overlay').classList.add('open');
+  document.getElementById('add-sheet').classList.add('open');
+}
+function openEditSheet() {
+  const rec = records.find(r => r.id == editingId);
+  if (!rec) return;
+  document.getElementById('add-sheet-title').textContent = 'Düzenle';
+  document.getElementById('add-save-btn').textContent = 'Güncelle';
+  document.getElementById('delete-btn-wrap').style.display = 'block';
+  document.getElementById('f-isim').value = rec.isim || '';
+  document.getElementById('f-soyisim').value = rec.soyisim || '';
+  document.getElementById('f-plaka').value = rec.plaka || '';
+  document.getElementById('f-acente').value = rec.acente || '';
+  document.getElementById('f-trafik-tarih').value = rec.trafik_tarihi || '';
+  document.getElementById('f-kasko-tarih').value = rec.kasko_tarihi || '';
+  document.getElementById('f-trafik-tutar').value = rec.trafik_tutar || '';
+  document.getElementById('f-kasko-tutar').value = rec.kasko_tutar || '';
+  document.getElementById('f-notlar').value = rec.notlar || '';
+  setSeg(rec.tip || 'trafik');
+  document.getElementById('add-overlay').classList.add('open');
+  document.getElementById('add-sheet').classList.add('open');
+}
+function closeAddSheet() {
+  document.getElementById('add-overlay').classList.remove('open');
+  document.getElementById('add-sheet').classList.remove('open');
+}
+
+// =========================================================
+// CHANGE PIN
+// =========================================================
+function showChangePinSheet() {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  document.getElementById('cp-error').textContent = '';
+  document.getElementById('changepin-overlay').classList.add('open');
+  document.getElementById('changepin-sheet').classList.add('open');
+}
+function closeChangePinSheet() {
+  document.getElementById('changepin-overlay').classList.remove('open');
+  document.getElementById('changepin-sheet').classList.remove('open');
+}
+function doChangePin() {
+  const cur = document.getElementById('cp-current').value;
+  const nw = document.getElementById('cp-new').value;
+  const cf = document.getElementById('cp-confirm').value;
+  const err = document.getElementById('cp-error');
+  if (cur !== currentPin) { err.textContent = 'Mevcut PIN hatalı'; return; }
+  if (nw.length !== 4 || !/^\d{4}$/.test(nw)) { err.textContent = 'Yeni PIN 4 rakam olmalı'; return; }
+  if (nw !== cf) { err.textContent = 'PIN\'ler eşleşmiyor'; return; }
+  currentPin = nw;
+  localStorage.setItem('app_pin', nw);
+  closeChangePinSheet();
+  showToast('PIN güncellendi ✓');
+}
+
+// =========================================================
+// SHEETS CONFIG
+// =========================================================
+function showSheetsConfig() {
+  document.getElementById('sheets-url-input').value = sheetsUrl;
+  document.getElementById('sheets-overlay').classList.add('open');
+  document.getElementById('sheets-sheet').classList.add('open');
+}
+function closeSheetsConfig() {
+  document.getElementById('sheets-overlay').classList.remove('open');
+  document.getElementById('sheets-sheet').classList.remove('open');
+}
+function saveSheetsUrl() {
+  const url = document.getElementById('sheets-url-input').value.trim();
+  if (!url) { showToast('URL boş olamaz'); return; }
+  sheetsUrl = url;
+  localStorage.setItem('sheets_url', url);
+  closeSheetsConfig();
+  document.getElementById('sheets-status-label').textContent = '✓ Bağlı';
+  showToast('Bağlanıyor...');
+  loadData().then(() => showToast('Veriler yüklendi ✓'));
+}
+
+// =========================================================
+// HELPERS
+// =========================================================
+function daysLeft(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.ceil((d - today) / 86400000);
+}
+function getMinDaysLeft(r) {
+  const vals = [];
+  if (r.trafik_tarihi) vals.push(daysLeft(r.trafik_tarihi));
+  if (r.kasko_tarihi) vals.push(daysLeft(r.kasko_tarihi));
+  if (vals.length === 0) return null;
+  return Math.min(...vals);
+}
+function getNextDate(r) {
+  if (!r.trafik_tarihi && !r.kasko_tarihi) return null;
+  const dates = [r.trafik_tarihi, r.kasko_tarihi].filter(Boolean);
+  return dates.sort()[0];
+}
+function formatDate(d) {
+  if (!d) return '—';
+  const parts = d.split('-');
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
